@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wirality — BD Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#F0EDE6;--ink2:#B8B4AC;--ink3:#7A766F;
+  --bg:#141412;--bg2:#1C1B19;--bg3:#25231F;--line:#2E2C28;
+  --gold:#D4A843;--gold-l:#2E2510;--teal:#4AADA0;--teal-l:#0F2826;
+  --blue:#5B8FD4;--blue-l:#101E36;--green:#4DB87A;--green-l:#0E2A1A;
+  --red:#D45B5B;--red-l:#2E1010;--violet:#A070D0;--violet-l:#1E1030;--orange:#E08050;--orange-l:#2E1A0A;
+  --f:'Outfit',sans-serif;--m:'IBM Plex Mono',monospace;
+}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--f);font-size:14px;line-height:1.5}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:14px}
+
+
+#login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px}
+.login-card{max-width:380px;width:100%;text-align:center}
+.logo{font-weight:800;font-size:28px;letter-spacing:-.5px}
+.logo span{color:var(--gold)}
+.login-card p{color:var(--ink2);margin:10px 0 28px}
+.g-btn{display:inline-flex;align-items:center;gap:10px;background:var(--ink);color:#141412;border:0;border-radius:10px;padding:13px 22px;font-weight:600;font-size:15px}
+.g-btn:hover{background:#fff}
+#loginErr{color:var(--red);margin-top:16px;font-size:13px}
+
+
+#app{display:none;min-height:100vh}
+.side{position:fixed;left:0;top:0;bottom:0;width:220px;background:var(--bg2);border-right:1px solid var(--line);padding:22px 14px;display:flex;flex-direction:column}
+.side .logo{font-size:20px;padding:0 10px 22px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button{background:none;border:0;color:var(--ink2);text-align:left;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500}
+.nav button:hover{background:var(--bg3);color:var(--ink)}
+.nav button.on{background:var(--gold-l);color:var(--gold)}
+.side-foot{margin-top:auto;padding:12px 10px 0;border-top:1px solid var(--line);font-size:12px;color:var(--ink3)}
+.side-foot b{display:block;color:var(--ink);font-size:13px;font-weight:600}
+.side-foot button{background:none;border:0;color:var(--ink3);text-decoration:underline;padding:0;margin-top:6px;font-size:12px}
+main{margin-left:220px;padding:26px 32px 60px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+.top h1{font-size:22px;font-weight:700}
+.top .sub{color:var(--ink3);font-size:12px;font-family:var(--m)}
+.btn{background:var(--gold);color:#141412;border:0;border-radius:8px;padding:10px 16px;font-weight:600;font-size:14px}
+.btn:hover{filter:brightness(1.1)}
+.ghost{background:var(--bg3);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px 16px;font-weight:500}
+.ghost:hover{border-color:var(--ink3)}
+.danger{background:var(--red-l);color:var(--red);border:1px solid #4a1c1c;border-radius:8px;padding:10px 16px;font-weight:500}
+
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px}
+.filters button{background:var(--bg2);border:1px solid var(--line);color:var(--ink2);padding:7px 13px;border-radius:999px;font-size:13px}
+.filters button.on{background:var(--ink);color:#141412;border-color:var(--ink);font-weight:600}
+
+.page{display:none}.page.on{display:block}
+
+
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:16px}
+.kpi .l{color:var(--ink3);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.kpi .v{font-size:28px;font-weight:700;margin-top:4px;font-family:var(--m)}
+.kpi .s{color:var(--ink3);font-size:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.card{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:18px}
+.card h3{font-size:14px;font-weight:600;margin-bottom:14px}
+.bar-row{display:grid;grid-template-columns:140px 1fr 70px;gap:10px;align-items:center;margin-bottom:9px;font-size:13px}
+.bar-row .n{color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar{height:10px;background:var(--bg3);border-radius:5px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:5px}
+.bar-row .c{text-align:right;font-family:var(--m);color:var(--ink2);font-size:12px}
+.empty{color:var(--ink3);font-size:13px;padding:14px 0}
+
+
+.tbl-wrap{background:var(--bg2);border:1px solid var(--line);border-radius:12px;overflow:auto}
+table{width:100%;border-collapse:collapse;min-width:820px}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap;font-weight:600}
+td{padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+tr.row:hover td{background:var(--bg3);cursor:pointer}
+td.num{font-family:var(--m)}
+.client{font-weight:600}
+.opp{color:var(--ink3);font-size:12px}
+.badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
+.b-Prospect{background:var(--bg3);color:var(--ink2)}
+.b-First{background:var(--teal-l);color:var(--teal)}
+.b-Brief{background:var(--gold-l);color:var(--gold)}
+.b-PitchP{background:var(--orange-l);color:var(--orange)}
+.b-Presented{background:var(--blue-l);color:var(--blue)}
+.b-Commercials{background:var(--violet-l);color:var(--violet)}
+.b-Contract{background:var(--green-l);color:var(--green)}
+.b-Won{background:var(--green);color:#0D0C0B}
+.b-Lost{background:var(--red);color:#fff}
+.stale{color:var(--red)}
+.cards{display:none}
+.pcard{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px}
+.pcard .r{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pcard .meta{color:var(--ink3);font-size:12px;margin-top:6px}
+
+
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
+#ov.on{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--line);border-radius:14px;width:100%;max-width:720px;max-height:92vh;display:flex;flex-direction:column}
+.mh{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.mh h2{font-size:17px}
+.mh button{background:none;border:0;color:var(--ink3);font-size:22px}
+.mb{padding:18px 22px;overflow:auto}
+.sec{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);margin:6px 0 10px;font-weight:600}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;margin-bottom:18px}
+.fg .full{grid-column:1/-1}
+.fg.credit{grid-template-columns:2fr 1fr 2fr 1fr}
+label{display:block;font-size:12px;color:var(--ink2);margin-bottom:5px}
+.fi{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:10px 11px}
+.fi:focus{outline:none;border-color:var(--gold)}
+textarea.fi{min-height:70px;resize:vertical}
+.ctotal{font-size:12px;font-family:var(--m);color:var(--ink3);margin-top:-8px;margin-bottom:14px}
+.ctotal.bad{color:var(--red)}
+.mf{padding:14px 22px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end}
+
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#141412;padding:10px 18px;border-radius:8px;font-weight:600;font-size:13px;display:none;z-index:99}
+.bnav{display:none}
+
+@media (max-width:860px){
+  .side{display:none}
+  main{margin-left:0;padding:18px 14px 90px}
+  .kpis{grid-template-columns:1fr 1fr}
+  .grid2{grid-template-columns:1fr}
+  .tbl-wrap.mob-hide{display:none}
+  .cards{display:block}
+  .fg,.fg.credit{grid-template-columns:1fr}
+  .modal{max-height:100vh;height:100%;border-radius:0}
+  #ov{padding:0}
+  .bar-row{grid-template-columns:100px 1fr 56px}
+  .bnav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--line);z-index:40}
+  .bnav button{flex:1;background:none;border:0;color:var(--ink3);padding:12px 4px;font-size:12px;font-weight:500}
+  .bnav button.on{color:var(--gold)}
+}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="login-card">
+    <div class="logo">Wirality<span>.</span> BD</div>
+    <p>New business pipeline: leads, pitches, conversions and who made them happen.</p>
+    <button class="g-btn" onclick="signIn()">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.3.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>
+      Sign in with Google
+    </button>
+    <div id="loginErr"></div>
+  </div>
+</div>
+
+<div id="app">
+  <aside class="side">
+    <div class="logo">Wirality<span>.</span> BD</div>
+    <nav class="nav" id="nav">
+      <button data-p="dash" class="on">Dashboard</button>
+      <button data-p="pipe">Pipeline</button>
+      <button data-p="people">People</button>
+      <button data-p="closed">Closed</button>
+    </nav>
+    <div class="side-foot"><b id="uName"></b><span id="uMail"></span><br><button onclick="logOut()">Sign out</button></div>
+  </aside>
+
+  <main>
+    <div class="top">
+      <div><h1 id="title">Dashboard</h1><div class="sub" id="sync">Connecting…</div></div>
+      <button class="btn" onclick="openModal()">+ New opportunity</button>
+    </div>
+    <div class="filters" id="filters"></div>
+
+    <section class="page on" id="p-dash">
+      <div class="kpis">
+        <div class="kpi"><div class="l">Active opportunities</div><div class="v" id="k1">0</div><div class="s" id="k1s"></div></div>
+        <div class="kpi"><div class="l">Pipeline value</div><div class="v" id="k2">0</div><div class="s">₹ lakhs, active only</div></div>
+        <div class="kpi"><div class="l">Win rate</div><div class="v" id="k3">—</div><div class="s" id="k3s"></div></div>
+        <div class="kpi"><div class="l">Won value</div><div class="v" id="k4">0</div><div class="s">₹ lakhs</div></div>
+      </div>
+      <div class="grid2">
+        <div class="card"><h3>Funnel: how far opportunities have reached</h3><div id="funnel"></div></div>
+        <div class="card"><h3>Active pipeline by stage (₹L)</h3><div id="byStage"></div></div>
+      </div>
+      <div class="grid2">
+        <div class="card"><h3>Win rate by team</h3><div id="byTeam"></div></div>
+        <div class="card"><h3>Win rate by lead source</h3><div id="bySource"></div></div>
+      </div>
+      <div class="grid2">
+        <div class="card"><h3>Retainer vs project (won, ₹L)</h3><div id="byType"></div></div>
+        <div class="card"><h3>Needs attention: no stage change in 14+ days</h3><div id="stale"></div></div>
+      </div>
+    </section>
+
+    <section class="page" id="p-pipe">
+      <div class="tbl-wrap mob-hide"><table>
+        <thead><tr>
+          <th data-s="client">Client</th><th data-s="stage">Stage</th><th data-s="team">Team</th><th data-s="type">Type</th>
+          <th data-s="value">Value ₹L</th><th data-s="source">Source</th><th data-s="owner">Owner</th><th data-s="age">Days in stage</th>
+        </tr></thead><tbody id="pipeBody"></tbody>
+      </table></div>
+      <div class="cards" id="pipeCards"></div>
+    </section>
+
+    <section class="page" id="p-people">
+      <p style="color:var(--ink3);font-size:13px;margin-bottom:14px">Credit-weighted: each person gets their credit % of the deal's value.</p>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Person</th><th>Leads sourced</th><th>Pitches led</th><th>Deals involved</th><th>Won</th><th>Win rate</th><th>Credit: pipeline ₹L</th><th>Credit: won ₹L</th></tr></thead>
+        <tbody id="peopleBody"></tbody>
+      </table></div>
+    </section>
+
+    <section class="page" id="p-closed">
+      <div class="tbl-wrap mob-hide"><table>
+        <thead><tr><th>Client</th><th>Result</th><th>Team</th><th>Type</th><th>Value ₹L</th><th>Reason</th><th>Lost to</th><th>Closed</th></tr></thead>
+        <tbody id="closedBody"></tbody>
+      </table></div>
+      <div class="cards" id="closedCards"></div>
+    </section>
+  </main>
+
+  <nav class="bnav" id="bnav">
+    <button data-p="dash" class="on">Dashboard</button><button data-p="pipe">Pipeline</button><button data-p="people">People</button><button data-p="closed">Closed</button>
+  </nav>
+</div>
+
+<div id="ov" onclick="if(event.target.id==='ov')closeModal()">
+  <div class="modal">
+    <div class="mh"><h2 id="mTitle">New opportunity</h2><button onclick="closeModal()">×</button></div>
+    <div class="mb">
+      <div class="sec">The opportunity</div>
+      <div class="fg">
+        <div><label>Client / brand *</label><input class="fi" id="f-client" list="dl-clients"></div>
+        <div><label>Opportunity (what's being pitched)</label><input class="fi" id="f-opp" placeholder="e.g. Social retainer FY27"></div>
+        <div><label>Team</label><select class="fi" id="f-team"></select></div>
+        <div><label>Engagement type</label><select class="fi" id="f-type"></select></div>
+        <div><label>Stage</label><select class="fi" id="f-stage"></select></div>
+        <div><label>Lead source</label><select class="fi" id="f-source"></select></div>
+        <div><label>Value (₹ lakhs, annualised for retainers)</label><input class="fi" id="f-value" type="number" step="0.1" min="0"></div>
+        <div><label>Competing agencies</label><input class="fi" id="f-comp" placeholder="If known"></div>
+        <div id="reasonWrap" style="display:none"><label>Win / loss reason</label><select class="fi" id="f-reason"></select></div>
+      </div>
+      <div class="sec">People &amp; credit</div>
+      <div class="fg credit">
+        <div><label>Originator (found the lead)</label><input class="fi" id="f-orig" list="dl-people"></div>
+        <div><label>Credit %</label><input class="fi pct" id="f-orig-p" type="number" min="0" max="100"></div>
+        <div><label>Pitch lead</label><input class="fi" id="f-pitch" list="dl-people"></div>
+        <div><label>Credit %</label><input class="fi pct" id="f-pitch-p" type="number" min="0" max="100"></div>
+        <div><label>Account lead</label><input class="fi" id="f-acct" list="dl-people"></div>
+        <div><label>Credit %</label><input class="fi pct" id="f-acct-p" type="number" min="0" max="100"></div>
+        <div><label>Creative lead</label><input class="fi" id="f-crtv" list="dl-people"></div>
+        <div><label>Credit %</label><input class="fi pct" id="f-crtv-p" type="number" min="0" max="100"></div>
+        <div><label>Strategy lead</label><input class="fi" id="f-strat" list="dl-people"></div>
+        <div><label>Credit %</label><input class="fi pct" id="f-strat-p" type="number" min="0" max="100"></div>
+      </div>
+      <div class="ctotal" id="ctotal">Credit total: 0%</div>
+      <div class="fg"><div class="full"><label>Notes / next action</label><textarea class="fi" id="f-notes" placeholder="What's the next step and by when?"></textarea></div></div>
+    </div>
+    <div class="mf">
+      <button class="danger" id="delBtn" style="margin-right:auto;display:none" onclick="delDeal()">Delete</button>
+      <button class="ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveOpp()">Save</button>
+    </div>
+  </div>
+</div>
+<datalist id="dl-people"></datalist><datalist id="dl-clients"></datalist>
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// Firebase project: wirality-bd-pipeline (same database as the old Netlify version)
+const firebaseConfig = {
+  apiKey: "AIzaSyDhFRqIZrUPtu-EYuf78peHxufPNFxm_JQ",
+  authDomain: "wirality-bd-pipeline.firebaseapp.com",
+  projectId: "wirality-bd-pipeline",
+  storageBucket: "wirality-bd-pipeline.firebasestorage.app",
+  messagingSenderId: "897317813036",
+  appId: "1:897317813036:web:d0b73456ea21ada0684a89"
+};
+
+const fb = initializeApp(firebaseConfig);
+const auth = getAuth(fb);
+const db = getFirestore(fb);
+
+const STAGES = ["Prospect","First Contact","Brief Received","Pitch In Progress","Pitch Presented","Commercials","Contract Sent","Closed Won","Closed Lost"];
+const OPEN = STAGES.slice(0,7);
+const BADGE = {"Prospect":"Prospect","First Contact":"First","Brief Received":"Brief","Pitch In Progress":"PitchP","Pitch Presented":"Presented","Commercials":"Commercials","Contract Sent":"Contract","Closed Won":"Won","Closed Lost":"Lost"};
+const STAGE_COL = {"Prospect":"#7A766F","First Contact":"#4AADA0","Brief Received":"#D4A843","Pitch In Progress":"#E08050","Pitch Presented":"#5B8FD4","Commercials":"#A070D0","Contract Sent":"#4DB87A"};
+const TEAMS = ["Creative & Social","Performance Marketing","Production","Integrated"];
+const TEAM_COL = {"Creative & Social":"#A070D0","Performance Marketing":"#5B8FD4","Production":"#D4A843","Integrated":"#4AADA0"};
+const TYPES = ["Retainer","Project"];
+const SOURCES = ["Cold Outreach","Referral","Inbound","LinkedIn","Existing Client","Network / Event","Pitch Invite / RFP","Other"];
+const REASONS = ["—","Creative / idea","Strategy","Price","Relationship","Team / credentials","Timing","Client went in-house","Lost to incumbent","No decision","Other"];
+
+let deals = [], team = "all", sortK = "value", sortD = -1, editId = null, user = null, unsub = null;
+
+const $ = id => document.getElementById(id);
+const num = v => +v || 0;
+const L = n => num(n).toFixed(1);
+const pct = (a,b) => b ? Math.round(a/b*100)+"%" : "—";
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const days = s => s ? Math.max(0, Math.floor((Date.now() - new Date(s)) / 864e5)) : null;
+const view = () => team === "all" ? deals : deals.filter(d => d.team === team);
+const isClosed = d => d.stage === "Closed Won" || d.stage === "Closed Lost";
+function toast(t){ const el=$("toast"); el.textContent=t; el.style.display="block"; clearTimeout(el._t); el._t=setTimeout(()=>el.style.display="none",2600); }
+const opts = (sel, arr) => $(sel).innerHTML = arr.map(o => `<option>${esc(o)}</option>`).join("");
+
+// Auth
+window.signIn = async () => {
+  $("loginErr").textContent = "";
+  try { await signInWithPopup(auth, new GoogleAuthProvider()); }
+  catch(e){ $("loginErr").textContent = "Sign-in failed: " + e.message; }
+};
+window.logOut = async () => { if (confirm("Sign out?")) { unsub && unsub(); await signOut(auth); } };
+
+onAuthStateChanged(auth, u => {
+  user = u;
+  $("login").style.display = u ? "none" : "flex";
+  $("app").style.display = u ? "block" : "none";
+  if (!u) { unsub && unsub(); unsub = null; deals = []; return; }
+  $("uName").textContent = u.displayName || "";
+  $("uMail").textContent = u.email || "";
+  unsub = onSnapshot(collection(db, "deals"), snap => {
+    deals = snap.docs.map(d => ({ ...d.data(), _id: d.id }));
+    $("sync").textContent = `${deals.length} opportunities · live for everyone`;
+    renderAll();
+  }, err => {
+    $("sync").textContent = "Sync error";
+    toast("Can't read data: " + (err.code === "permission-denied" ? "database rules are blocking access" : err.message));
+  });
+});
+
+// Navigation
+function show(p){
+  document.querySelectorAll(".page").forEach(s => s.classList.toggle("on", s.id === "p-"+p));
+  document.querySelectorAll("[data-p]").forEach(b => b.classList.toggle("on", b.dataset.p === p));
+  $("title").textContent = {dash:"Dashboard",pipe:"Pipeline",people:"People",closed:"Closed deals"}[p];
+}
+document.querySelectorAll("[data-p]").forEach(b => b.onclick = () => show(b.dataset.p));
+$("filters").innerHTML = ["all",...TEAMS].map(t => `<button data-t="${esc(t)}" class="${t==="all"?"on":""}">${t==="all"?"All teams":esc(t)}</button>`).join("");
+$("filters").querySelectorAll("button").forEach(b => b.onclick = () => {
+  team = b.dataset.t; $("filters").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); renderAll();
+});
+document.querySelectorAll("th[data-s]").forEach(th => th.onclick = () => {
+  const k = th.dataset.s; sortD = sortK === k ? -sortD : -1; sortK = k; renderPipe();
+});
+
+// Rendering
+function bars(el, rows, color){
+  const max = Math.max(...rows.map(r => r.v), 0);
+  $(el).innerHTML = rows.length && max > 0 ? rows.map(r =>
+    `<div class="bar-row"><span class="n" title="${esc(r.n)}">${esc(r.n)}</span><div class="bar"><i style="width:${r.v/max*100}%;background:${r.c||color||"var(--gold)"}"></i></div><span class="c">${r.label ?? r.v}</span></div>`
+  ).join("") : `<div class="empty">Nothing here yet.</div>`;
+}
+function winRows(key, list, colors){
+  const v = view();
+  return list.map(k => {
+    const w = v.filter(d => d[key]===k && d.stage==="Closed Won").length;
+    const l = v.filter(d => d[key]===k && d.stage==="Closed Lost").length;
+    return { n:k, v: (w+l) ? w/(w+l)*100 : 0, label: (w+l) ? `${pct(w,w+l)} (${w}/${w+l})` : "—", c: colors && colors[k] };
+  }).filter(r => r.label !== "—");
+}
+
+function renderDash(){
+  const v = view(), act = v.filter(d => !isClosed(d)), won = v.filter(d => d.stage==="Closed Won"), lost = v.filter(d => d.stage==="Closed Lost");
+  $("k1").textContent = act.length;
+  $("k1s").textContent = `${act.filter(d => ["Pitch In Progress","Pitch Presented"].includes(d.stage)).length} in pitch`;
+  $("k2").textContent = L(act.reduce((s,d) => s+num(d.value), 0));
+  $("k3").textContent = pct(won.length, won.length+lost.length);
+  $("k3s").textContent = `${won.length} won · ${lost.length} lost`;
+  $("k4").textContent = L(won.reduce((s,d) => s+num(d.value), 0));
+
+  // Funnel: count opportunities that reached each stage or beyond (Closed Lost counted at its last known open stage is unknown, so counted at Prospect+)
+  const idx = d => d.stage==="Closed Won" ? 7 : d.stage==="Closed Lost" ? (STAGES.indexOf(d.lostAt) >= 0 ? STAGES.indexOf(d.lostAt) : 0) : STAGES.indexOf(d.stage);
+  const total = v.length;
+  bars("funnel", ["Prospect","First Contact","Brief Received","Pitch Presented","Commercials","Closed Won"].map(s => {
+    const i = s==="Closed Won" ? 7 : STAGES.indexOf(s);
+    const c = v.filter(d => idx(d) >= i).length;
+    return { n:s, v:c, label:`${c} · ${pct(c,total)}` };
+  }), "var(--teal)");
+
+  bars("byStage", OPEN.map(s => ({ n:s, v: act.filter(d=>d.stage===s).reduce((a,d)=>a+num(d.value),0), c:STAGE_COL[s] }))
+    .map(r => ({...r, label: L(r.v)})).filter(r => r.v > 0));
+  bars("byTeam", winRows("team", TEAMS, TEAM_COL));
+  bars("bySource", winRows("source", SOURCES), "var(--blue)");
+  bars("byType", TYPES.map(t => { const s = won.filter(d=>d.type===t).reduce((a,d)=>a+num(d.value),0); return {n:t, v:s, label:L(s)}; }).filter(r=>r.v>0), "var(--green)");
+
+  const st = act.filter(d => days(d.stageDate) >= 14).sort((a,b) => days(b.stageDate)-days(a.stageDate)).slice(0,8);
+  $("stale").innerHTML = st.length ? st.map(d =>
+    `<div class="bar-row" style="cursor:pointer" onclick="openModal('${d._id}')"><span class="n">${esc(d.client)}</span><span><span class="badge b-${BADGE[d.stage]||"Prospect"}">${esc(d.stage)}</span></span><span class="c stale">${days(d.stageDate)}d</span></div>`
+  ).join("") : `<div class="empty">Everything has moved in the last two weeks.</div>`;
+}
+
+function renderPipe(){
+  const rows = view().filter(d => !isClosed(d)).map(d => ({...d, age: days(d.stageDate) ?? 0}));
+  rows.sort((a,b) => {
+    let x = a[sortK], y = b[sortK];
+    if (sortK==="stage") { x = STAGES.indexOf(x); y = STAGES.indexOf(y); }
+    if (typeof x === "number" || typeof y === "number") return (num(x)-num(y))*sortD;
+    return String(x||"").localeCompare(String(y||""))*sortD;
+  });
+  $("pipeBody").innerHTML = rows.length ? rows.map(d => `<tr class="row" onclick="openModal('${d._id}')">
+    <td><div class="client">${esc(d.client)}</div><div class="opp">${esc(d.opp)}</div></td>
+    <td><span class="badge b-${BADGE[d.stage]||"Prospect"}">${esc(d.stage)}</span></td>
+    <td>${esc(d.team)}</td><td>${esc(d.type)}</td><td class="num">${L(d.value)}</td><td>${esc(d.source)}</td>
+    <td>${esc(d.owner || d.pitchLead || d.originator)}</td><td class="num ${d.age>=14?"stale":""}">${d.age}</td></tr>`).join("")
+    : `<tr><td colspan="8" class="empty">No active opportunities. Add one with "+ New opportunity".</td></tr>`;
+  $("pipeCards").innerHTML = rows.map(d => `<div class="pcard" onclick="openModal('${d._id}')">
+    <div class="r"><span class="client">${esc(d.client)}</span><span class="badge b-${BADGE[d.stage]||"Prospect"}">${esc(d.stage)}</span></div>
+    <div class="meta">${esc(d.team)} · ${esc(d.type)} · ₹${L(d.value)}L · ${esc(d.owner||"")} · <span class="${d.age>=14?"stale":""}">${d.age}d in stage</span></div></div>`).join("") || `<div class="empty">No active opportunities.</div>`;
+}
+
+const ROLES = [["originator","origPct"],["pitchLead","pitchPct"],["acctLead","acctPct"],["creativeLead","crtvPct"],["strategyLead","stratPct"]];
+function renderPeople(){
+  const map = {};
+  const get = n => map[n] ||= { n, sourced:0, pitched:0, deals:new Set(), won:0, lost:0, pipe:0, wonV:0 };
+  view().forEach(d => {
+    const seen = new Set();
+    ROLES.forEach(([r,p]) => {
+      const n = (d[r]||"").trim(); if (!n) return;
+      const o = get(n), share = num(d.value) * num(d[p]) / 100;
+      if (r==="originator") o.sourced++;
+      if (r==="pitchLead") o.pitched++;
+      o.deals.add(d._id);
+      if (!isClosed(d)) o.pipe += share;
+      if (d.stage==="Closed Won") o.wonV += share;
+      if (!seen.has(n)) { seen.add(n); if (d.stage==="Closed Won") o.won++; if (d.stage==="Closed Lost") o.lost++; }
+    });
+  });
+  const list = Object.values(map).sort((a,b) => b.wonV-a.wonV || b.pipe-a.pipe);
+  $("peopleBody").innerHTML = list.length ? list.map(o => `<tr><td class="client">${esc(o.n)}</td><td class="num">${o.sourced}</td><td class="num">${o.pitched}</td>
+    <td class="num">${o.deals.size}</td><td class="num">${o.won}</td><td class="num">${pct(o.won,o.won+o.lost)}</td><td class="num">${L(o.pipe)}</td><td class="num">${L(o.wonV)}</td></tr>`).join("")
+    : `<tr><td colspan="8" class="empty">Add names to the people &amp; credit fields to build this view.</td></tr>`;
+  $("dl-people").innerHTML = list.map(o => `<option value="${esc(o.n)}">`).join("");
+  $("dl-clients").innerHTML = [...new Set(deals.map(d=>d.client).filter(Boolean))].map(c => `<option value="${esc(c)}">`).join("");
+}
+
+function renderClosed(){
+  const rows = view().filter(isClosed).sort((a,b) => String(b.stageDate||"").localeCompare(String(a.stageDate||"")));
+  $("closedBody").innerHTML = rows.length ? rows.map(d => `<tr class="row" onclick="openModal('${d._id}')">
+    <td><div class="client">${esc(d.client)}</div><div class="opp">${esc(d.opp)}</div></td>
+    <td><span class="badge b-${d.stage==="Closed Won"?"Won":"Lost"}">${d.stage==="Closed Won"?"Won":"Lost"}</span></td>
+    <td>${esc(d.team)}</td><td>${esc(d.type)}</td><td class="num">${L(d.value)}</td><td>${esc(d.reason||"—")}</td><td>${esc(d.competitor||"—")}</td><td class="num">${esc(d.stageDate||"—")}</td></tr>`).join("")
+    : `<tr><td colspan="8" class="empty">No closed deals yet.</td></tr>`;
+  $("closedCards").innerHTML = rows.map(d => `<div class="pcard" onclick="openModal('${d._id}')"><div class="r"><span class="client">${esc(d.client)}</span>
+    <span class="badge b-${d.stage==="Closed Won"?"Won":"Lost"}">${d.stage==="Closed Won"?"Won":"Lost"}</span></div>
+    <div class="meta">${esc(d.team)} · ₹${L(d.value)}L · ${esc(d.reason||"")}</div></div>`).join("") || `<div class="empty">No closed deals yet.</div>`;
+}
+function renderAll(){ renderDash(); renderPipe(); renderPeople(); renderClosed(); }
+
+// Modal
+opts("f-team", TEAMS); opts("f-type", TYPES); opts("f-stage", STAGES); opts("f-source", SOURCES); opts("f-reason", REASONS);
+const FIELDS = {client:"f-client",opp:"f-opp",team:"f-team",type:"f-type",stage:"f-stage",source:"f-source",value:"f-value",competitor:"f-comp",reason:"f-reason",notes:"f-notes",
+  originator:"f-orig",origPct:"f-orig-p",pitchLead:"f-pitch",pitchPct:"f-pitch-p",acctLead:"f-acct",acctPct:"f-acct-p",creativeLead:"f-crtv",crtvPct:"f-crtv-p",strategyLead:"f-strat",stratPct:"f-strat-p"};
+const NUMS = ["value","origPct","pitchPct","acctPct","crtvPct","stratPct"];
+function credit(){ const t = ["f-orig-p","f-pitch-p","f-acct-p","f-crtv-p","f-strat-p"].reduce((s,i)=>s+num($(i).value),0);
+  $("ctotal").textContent = `Credit total: ${t}%` + (t && t!==100 ? " (should add up to 100%)" : ""); $("ctotal").classList.toggle("bad", !!t && t!==100); }
+document.querySelectorAll(".pct").forEach(i => i.oninput = credit);
+$("f-stage").onchange = () => $("reasonWrap").style.display = $("f-stage").value.startsWith("Closed") ? "block" : "none";
+
+window.openModal = id => {
+  editId = id || null;
+  const d = id ? deals.find(x => x._id === id) : null;
+  Object.entries(FIELDS).forEach(([k,f]) => {
+    const el = $(f);
+    if (el.tagName === "SELECT") el.value = d && d[k] ? d[k] : el.options[0].value;
+    else el.value = d ? (d[k] ?? "") : "";
+  });
+  if (!d && user) $("f-orig").value = user.displayName || "";
+  $("mTitle").textContent = d ? "Edit opportunity" : "New opportunity";
+  $("delBtn").style.display = d ? "block" : "none";
+  $("f-stage").onchange(); credit();
+  $("ov").classList.add("on");
+};
+window.closeModal = () => { $("ov").classList.remove("on"); editId = null; };
+
+window.saveOpp = async () => {
+  const data = {};
+  Object.entries(FIELDS).forEach(([k,f]) => data[k] = NUMS.includes(k) ? num($(f).value) : $(f).value.trim());
+  if (!data.client) { toast("Client name is required"); return; }
+  if (!data.stage.startsWith("Closed")) data.reason = "";
+  data.owner = data.pitchLead || data.originator;
+  const prev = editId ? deals.find(x => x._id === editId) : null;
+  if (!prev || prev.stage !== data.stage) data.stageDate = new Date().toISOString().slice(0,10);
+  if (data.stage === "Closed Lost" && prev && prev.stage !== "Closed Lost") data.lostAt = prev.stage;
+  data.updatedAt = serverTimestamp(); data.savedBy = user?.email || "";
+  try {
+    if (editId) await updateDoc(doc(db, "deals", editId), data);
+    else { data.createdAt = serverTimestamp(); await addDoc(collection(db, "deals"), data); }
+    closeModal(); toast("Saved");
+  } catch(e) { toast("Save failed: " + (e.code==="permission-denied" ? "no permission" : e.message)); }
+};
+window.delDeal = async () => {
+  if (!editId || !confirm("Delete this opportunity? This can't be undone.")) return;
+  try { await deleteDoc(doc(db, "deals", editId)); closeModal(); toast("Deleted"); }
+  catch(e) { toast("Delete failed: " + e.message); }
+};
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+</script>
+</body>
+</html>
